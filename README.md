@@ -8,7 +8,7 @@ fireTS, a sklean style api for time-series prediction.
 
 A sklearn api to perform time-series prediction. The api implements two functionalities:
 
-- Create lag features from inputs/predictors/features and outputs/response with flexible lag steps selection
+- Create lag features from inputs/predictors/features and outputs/response/target with flexible lag steps selection
 - Multi-step prediction given future inputs/predictors/features
 
 * Version 0.0.0
