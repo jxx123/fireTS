@@ -26,7 +26,7 @@ class TimeSeriesEstimator(BaseEstimator):
         if input_delay is None:
             input_delay = [1] * len(self.input_order)
         self.input_delay = input_delay
-        self.output_ahead = output_ahead  # TODO: support multi-step ahead prediction
+        self.output_ahead = output_ahead
         self._X_last = None
         self._Xdata_last = None
         self._ydata_last = None
@@ -63,11 +63,11 @@ class TimeSeriesEstimator(BaseEstimator):
         lag_features: lag feature matrix, in form of [y_lag_features,
             X1_lag_features, ..., Xp_lag_features]
             shape:
-            (N - max(input_delay + input_order) + 1 - output_ahead) *
+            (N - max(max(input_delay + input_order) - 1, output_order) + 1 - output_ahead) *
             (output_order + sum(input_order))
         target: target vector shifted by output_ahead, i.e. y(t + output_ahead)
             shape:
-            (N - max(input_delay + input_order) + 1 - output_ahead) * 1
+            (N - max(max(input_delay + input_order), output_order) + 1 - output_ahead) * 1
         """
         X_lag = self._create_input_lag_features(X)
 
