@@ -1,5 +1,5 @@
 from fireTS.utils import shift, create_lag_features
-from fireTS.core import TimeSeriesEstimator, TimeSeriesRegressor
+from fireTS.core import NARX
 from sklearn.linear_model import LinearRegression
 import numpy as np
 from nose.tools import *
@@ -58,39 +58,28 @@ def test_create_lag_features():
     np.testing.assert_array_equal(lag2, exp2)
 
 
-@raises(ValueError)
 def test_preprocess_data():
-    estimator = TimeSeriesEstimator(
-        LinearRegression(),
-        output_order=2,
-        input_order=[2, 3],
-        input_delay=[1, 2])
+    estimator = NARX(
+        LinearRegression(), auto_order=2, exog_order=[2, 3], exog_delay=[1, 2])
 
     X = np.array([[1., 3.], [2., 7.], [4., 6.], [3., 8.], [5., 5.], [2.5, 4.5],
                   [3., 3.8]])
     y = np.array([1., 5., 7., 4., 6., 3., 2.])
-    features, target = estimator._preprocess_data(X, y)
+    features, target = estimator._preprocess_data(y, X=X)
 
-    y_exp = np.array([6., 3., 2.])
-    X_exp = np.array([[4., 7., 3., 4., 6., 7.,
-                       3.], [6., 4., 5., 3., 8., 6., 7.],
-                      [3., 6., 2.5, 5., 5., 8., 6.]])
+    y_exp = np.array([3., 2.])
+    X_exp = np.array([[6., 4., 3., 4., 6., 7., 3.],
+                      [3., 6., 5., 3., 8., 6., 7.]])
 
     np.testing.assert_array_equal(target, y_exp)
     np.testing.assert_array_equal(features, X_exp)
 
     estimator.fit(X, y)
 
-    y_bad = np.delete(y, 1)
-    estimator.fit(X, y_bad)
-
 
 def test_update_lag_features():
-    regressor = TimeSeriesRegressor(
-        LinearRegression(),
-        output_order=2,
-        input_order=[2, 3],
-        input_delay=[1, 2])
+    regressor = NARX(
+        LinearRegression(), auto_order=2, exog_order=[2, 3], exog_delay=[1, 2])
 
     Xdata = np.array([[4., 7., 3., 4., 6., 7.,
                        3.], [6., 4., 5., 3., 8., 6., 7.],
@@ -99,8 +88,9 @@ def test_update_lag_features():
 
     X_updated = regressor._update_lag_features(Xdata, ypred)
 
-    X_exp = np.array([[6., 4., 5., 3., 8., 6., 7.],
-                      [3., 6., 2.5, 5., 5., 8., 6.]])
+    X_exp = np.array([[6., 4., 5., 3., 8., 6.,
+                       7.], [3., 6., 2.5, 5., 5., 8., 6.],
+                      [2., 3., np.nan, 2.5, np.nan, 5., 8.]])
     np.testing.assert_array_equal(X_updated, X_exp)
 
 

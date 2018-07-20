@@ -1,6 +1,6 @@
 import pandas as pd
-from sklearn.linear_model import LinearRegression
-from fireTS.core import TimeSeriesRegressor
+from sklearn.linear_model import LinearRegression, Ridge
+from fireTS.core import NARX
 from fireTS.utils import shift
 import numpy as np
 import pytest
@@ -11,19 +11,12 @@ import copy
 @pytest.mark.parametrize('nb', [[6, 6], [1, 1], [2, 3]])
 @pytest.mark.parametrize('nk', [[1, 1], [1, 2], [4, 5]])
 def test_TimeSeriesRegressor_create_features(na, nb, nk):
-    df = pd.read_csv(
-        '~/Documents/DiabetesProject/Glucose prediction/OhioData/OhioT1DM-training/clean3/train/559_train.csv'
-    )
-    df['insulin'] = df['basal'] + df['bolus'] / 5
-    df = df.set_index('ts')
-    df.index = pd.to_datetime(df.index)
-    selected_features = ['insulin', 'meal']
-    X = df[selected_features]
-    y = df['bg']
-    mdl = TimeSeriesRegressor(
-        LinearRegression(), output_order=na, input_order=nb, input_delay=nk)
+    np.random.seed(0)
+    X = pd.DataFrame(np.random.randn(100, 2))
+    y = pd.Series(np.random.randn(100))
+    mdl = NARX(LinearRegression(), auto_order=na, exog_order=nb, exog_delay=nk)
 
-    Xfeatures_act, ytarget_act = mdl._preprocess_data(X.values, y.values)
+    Xfeatures_act, ytarget_act = mdl._preprocess_data(y.values, X=X.values)
 
     Xfeatures_exp, ytarget_exp = helper_preprocess(X, y, na, nb, nk)
 
@@ -31,47 +24,54 @@ def test_TimeSeriesRegressor_create_features(na, nb, nk):
     np.testing.assert_array_equal(ytarget_act, ytarget_exp)
 
 
-def helper_preprocess(X, y, auto_order, exog_order, exog_delay, pred_step=1):
-    target = y.shift(-(pred_step - 1))
+def helper_preprocess(X,
+                      y,
+                      auto_order,
+                      exog_order,
+                      exog_delay,
+                      pred_step=1,
+                      removeNA=True):
+    target = y.shift(-pred_step)
     predictor = pd.DataFrame()
     for lag in range(auto_order):
-        predictor[y.name + '_lag%d' % (lag + 1)] = y.shift(lag + 1)
+        predictor[str(y.name) + '_lag%d' % lag] = y.shift(lag)
 
     for i, (nb, nk) in enumerate(zip(exog_order, exog_delay)):
         for lag in range(nb):
-            predictor[X.columns[i]
+            predictor[str(X.columns[i])
                       + '_lag%d' % (lag + nk)] = X.iloc[:, i].shift(lag + nk)
 
-    mask = target.isna() | predictor.isna().any(axis=1)
-
-    return predictor.loc[~mask, :].values, target[~mask].values
+    if removeNA:
+        mask = target.isna() | predictor.isna().any(axis=1)
+        return predictor.loc[~mask, :].values, target[~mask].values
+    else:
+        return predictor.values, target.values
 
 
 def test_TimeSeriesRegressor_predict():
-    df = pd.read_csv(
-        '~/Documents/DiabetesProject/Glucose prediction/OhioData/OhioT1DM-training/clean3/train/559_train.csv'
-    )
-    df['insulin'] = df['basal'] + df['bolus'] / 5
-    df = df.set_index('ts')
-    df.index = pd.to_datetime(df.index)
-    selected_features = ['insulin', 'meal']
-    X = df[selected_features]
-    y = df['bg']
+    np.random.seed(0)
+    X = pd.DataFrame(np.random.randn(100, 2))
+    y = pd.Series(np.random.randn(100))
     na = 3
     nb = [3, 3]
     nk = [1, 1]
     step = 2
-    mdl = TimeSeriesRegressor(
-        LinearRegression(), output_order=na, input_order=nb, input_delay=nk)
+    mdl = NARX(LinearRegression(), auto_order=na, exog_order=nb, exog_delay=nk)
 
     mdl.fit(X, y)
     ypred_act = mdl.predict(X, y, step=step)
+    mdl.score(X, y, step=step, method="r2")
+    mdl.score(X, y, step=step, method="mse")
 
     # -------- manual computation ---------------
     kernel_mdl = LinearRegression()
-    Xfeatures_exp, ytarget_exp = helper_preprocess(X, y, na, nb, nk)
-    kernel_mdl.fit(Xfeatures_exp, ytarget_exp)
-    ypred_exp1 = kernel_mdl.predict(Xfeatures_exp)
+    Xfeatures_exp, ytarget_exp = helper_preprocess(
+        X, y, na, nb, nk, removeNA=False)
+    mask = np.isnan(ytarget_exp) | np.isnan(Xfeatures_exp).any(axis=1)
+    kernel_mdl.fit(Xfeatures_exp[~mask, :], ytarget_exp[~mask])
+
+    ypred_exp1 = np.empty(X.shape[0]) * np.nan
+    ypred_exp1[~mask] = kernel_mdl.predict(Xfeatures_exp[~mask, :])
 
     X1 = copy.deepcopy(Xfeatures_exp)
     X2 = copy.deepcopy(Xfeatures_exp)
@@ -87,14 +87,49 @@ def test_TimeSeriesRegressor_predict():
     X2[:, 6] = shift(X2[:, 6], -1)
     mask = ~np.isnan(X2).any(axis=1)
 
-    X2 = X2[mask, :]
-
     np.testing.assert_array_equal(Xfeatures_updated, X2)
 
-    ypred_exp2 = kernel_mdl.predict(X2)
+    ypred_exp2 = np.empty(X2.shape[0]) * np.nan
+    ypred_exp2[mask] = kernel_mdl.predict(X2[mask, :])
+    ypred_exp2 = np.concatenate([np.empty(2) * np.nan, ypred_exp2])[0:len(y)]
 
     np.testing.assert_array_almost_equal(ypred_act.values, ypred_exp2)
 
 
+def test_TimeSeriesRegressor_predict_error():
+    np.random.seed(0)
+    X = pd.DataFrame(np.random.randn(100, 2))
+    y = pd.Series(np.random.randn(100))
+    na = 3
+    nb = [3, 3]
+    nk = [1, 1]
+    mdl = NARX(
+        LinearRegression(),
+        auto_order=na,
+        exog_order=nb,
+        exog_delay=nk,
+        pred_step=6)
+
+    mdl.fit(X, y)
+    with pytest.raises(ValueError):
+        ypred_act = mdl.predict(X, y, step=2)
+
+
+def test_TimeSeriesRegressor_grid_search():
+    np.random.seed(0)
+    X = pd.DataFrame(np.random.randn(100, 2))
+    y = pd.Series(np.random.randn(100))
+    na = 3
+    nb = [3, 3]
+    nk = [1, 1]
+    mdl = NARX(
+        Ridge(), auto_order=na, exog_order=nb, exog_delay=nk, pred_step=6)
+
+    para_grid = {'alpha': [0, 0.1, 0.3]}
+    mdl.grid_search(X, y, para_grid)
+
+
 if __name__ == "__main__":
     test_TimeSeriesRegressor_predict()
+    # test_TimeSeriesRegressor_create_features(2, [2, 3], [1, 1])
+    # pass
