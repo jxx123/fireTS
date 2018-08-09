@@ -146,55 +146,84 @@
   <div class="section" id="module-core">
 <span id="core-module"></span><h1>core module<a class="headerlink" href="#module-core" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
-<dt id="core.NARX">
-<em class="property">class </em><code class="descclassname">core.</code><code class="descname">NARX</code><span class="sig-paren">(</span><em>base_estimator</em>, <em>auto_order=0</em>, <em>pred_step=1</em>, <em>exog_order=1</em>, <em>exog_delay=None</em>, <em>**base_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#NARX"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.NARX" title="Permalink to this definition">¶</a></dt>
+<dt id="core.GeneralAutoRegressor">
+<em class="property">class </em><code class="descclassname">core.</code><code class="descname">GeneralAutoRegressor</code><span class="sig-paren">(</span><em>base_estimator</em>, <em>auto_order</em>, <em>exog_order</em>, <em>exog_delay=None</em>, <em>pred_step=1</em>, <em>**base_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#GeneralAutoRegressor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.GeneralAutoRegressor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#core.TimeSeriesRegressor" title="core.TimeSeriesRegressor"><code class="xref py py-class docutils literal notranslate"><span class="pre">core.TimeSeriesRegressor</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.RegressorMixin</span></code></p>
+<p>The general auto regression model can be written in the following form:</p>
+<div class="math notranslate" id="equation-gar">
+<span class="eqno">(1)<a class="headerlink" href="#equation-gar" title="Permalink to this equation">¶</a></span>\[\begin{split}y(t + k) &amp;=&amp; f(y(t), ..., y(t-p+1), \\
+         &amp; &amp; x_1(t - d_1), ..., x_1(t-d_1-q_1+1), \\
+         &amp; &amp; ..., x_m(t - d_1), ..., x_m(t - d_m - q_m + 1)) + e(t)\end{split}\]</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>base_estimator</strong> (<em>object</em>) – an estimator object that implements the
+scikit-learn API (fit, and predict). The
+estimator will be used to fit the function
+<span class="math notranslate">\(f\)</span> in equation <a class="reference internal" href="#equation-gar">(1)</a>.</li>
+<li><strong>auto_order</strong> (<em>int</em>) – the autoregression order <span class="math notranslate">\(p\)</span> in equation
+<a class="reference internal" href="#equation-gar">(1)</a>.</li>
+<li><strong>exog_order</strong> (<em>list</em>) – the exogenous input order, a list of integers
+representing the order for each exogenous input,
+i.e. <span class="math notranslate">\([q_1, q_2, ..., q_m]\)</span> in equation
+<a class="reference internal" href="#equation-gar">(1)</a>.</li>
+<li><strong>exog_delay</strong> (<em>list</em>) – the delays of the exogenous inputs, a list of
+integers representing the delay of each exogenous
+input, i.e. <span class="math notranslate">\([d_1, d_2, ..., d_m]\)</span> in
+equation <a class="reference internal" href="#equation-gar">(1)</a>. By default, all the delays are
+set to 0.</li>
+<li><strong>pred_step</strong> (<em>int</em>) – the prediction step <span class="math notranslate">\(k\)</span> in equation <a class="reference internal" href="#equation-gar">(1)</a>.
+By default, it is set to 1.</li>
+<li><strong>base_params</strong> (<em>dict</em>) – other keyword arguments for base_estimator.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
-<dt id="core.NARX.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#NARX.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.NARX.fit" title="Permalink to this definition">¶</a></dt>
+<dt id="core.GeneralAutoRegressor.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#GeneralAutoRegressor.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.GeneralAutoRegressor.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create lag features and fit the base_estimator.</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>X <span class="classifier-delimiter">:</span> <span class="classifier">array-like, shape = (n_samples, n_features)</span></dt>
-<dd>Exogenous input time series</dd>
-</dl>
-<p>y : array-like, shape = (n_samples)</p>
-</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X</strong> (<em>array-like</em>) – exogenous input time series, shape = (n_samples,
+n_exog_inputs)</li>
+<li><strong>y</strong> (<em>array-like</em>) – target time series to predict, shape = (n_samples)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
-<dt id="core.NARX.grid_search">
-<code class="descname">grid_search</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>para_grid</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#NARX.grid_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.NARX.grid_search" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="core.NARX.predict">
-<code class="descname">predict</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>step=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#NARX.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.NARX.predict" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="core.NARX.score">
-<code class="descname">score</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>step=1</em>, <em>method='r2'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#NARX.score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.NARX.score" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the coefficient of determination R^2 of the prediction.</p>
-<p>The coefficient R^2 is defined as (1 - u/v), where u is the residual
-sum of squares ((y_true - y_pred) ** 2).sum() and v is the total
-sum of squares ((y_true - y_true.mean()) ** 2).sum().
-The best possible score is 1.0 and it can be negative (because the
-model can be arbitrarily worse). A constant model that always
-predicts the expected value of y, disregarding the input features,
-would get a R^2 score of 0.0.</p>
-<dl class="docutils">
-<dt>X <span class="classifier-delimiter">:</span> <span class="classifier">array-like, shape = (n_samples, n_features)</span></dt>
-<dd>Test samples.</dd>
-<dt>y <span class="classifier-delimiter">:</span> <span class="classifier">array-like, shape = (n_samples) or (n_samples, n_outputs)</span></dt>
-<dd>True values for X.</dd>
-<dt>sample_weight <span class="classifier-delimiter">:</span> <span class="classifier">array-like, shape = [n_samples], optional</span></dt>
-<dd>Sample weights.</dd>
-</dl>
-<dl class="docutils">
-<dt>score <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
-<dd>R^2 of self.predict(X) wrt. y.</dd>
-</dl>
+<dt id="core.GeneralAutoRegressor.grid_search">
+<code class="descname">grid_search</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>para_grid</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#GeneralAutoRegressor.grid_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.GeneralAutoRegressor.grid_search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform grid search on the base_estimator. The function first generates
+the lag features and predicting targets, and then calls
+<code class="docutils literal notranslate"><span class="pre">GridSearchCV</span></code> in scikit-learn package.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>X</strong> (<em>array-like</em>) – exogenous input time series, shape = (n_samples,
+n_exog_inputs)</li>
+<li><strong>y</strong> (<em>array-like</em>) – target time series to predict, shape = (n_samples)</li>
+<li><strong>para_grid</strong> (<em>dict</em>) – use the same format in <code class="docutils literal notranslate"><span class="pre">GridSearchCV</span></code> in
+scikit-learn package.</li>
+<li><strong>params</strong> (<em>dict</em>) – other keyword arguments that can be passed into
+<code class="docutils literal notranslate"><span class="pre">GridSearchCV</span></code> in scikit-learn package.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -203,6 +232,9 @@ would get a R^2 score of 0.0.</p>
 <dt id="core.TimeSeriesRegressor">
 <em class="property">class </em><code class="descclassname">core.</code><code class="descname">TimeSeriesRegressor</code><span class="sig-paren">(</span><em>base_estimator</em>, <em>**base_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#TimeSeriesRegressor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.TimeSeriesRegressor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.BaseEstimator</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.RegressorMixin</span></code></p>
+<p>TimeSeriesRegressor creates a time series model based on a
+general-purpose regression model defined in base_estimator.
+base_estimator must be a model which implements the scikit-learn APIs.</p>
 <dl class="method">
 <dt id="core.TimeSeriesRegressor.set_params">
 <code class="descname">set_params</code><span class="sig-paren">(</span><em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/core.html#TimeSeriesRegressor.set_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#core.TimeSeriesRegressor.set_params" title="Permalink to this definition">¶</a></dt>

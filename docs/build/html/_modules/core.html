@@ -141,21 +141,19 @@
   <h1>Source code for core</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="k">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span>
-<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="k">import</span> <span class="n">check_X_y</span><span class="p">,</span> <span class="n">check_array</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics.regression</span> <span class="k">import</span> <span class="n">r2_score</span><span class="p">,</span> <span class="n">mean_squared_error</span>
-<span class="kn">from</span> <span class="nn">fireTS.utils</span> <span class="k">import</span> <span class="n">create_lag_features</span><span class="p">,</span> <span class="n">shift</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="k">import</span> <span class="n">check_X_y</span>
+<span class="kn">from</span> <span class="nn">fireTS.utils</span> <span class="k">import</span> <span class="n">shift</span><span class="p">,</span> <span class="n">MetaLagFeatureProcessor</span>
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="k">import</span> <span class="n">GridSearchCV</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">copy</span>
 
 
 <div class="viewcode-block" id="TimeSeriesRegressor"><a class="viewcode-back" href="../core.html#core.TimeSeriesRegressor">[docs]</a><span class="k">class</span> <span class="nc">TimeSeriesRegressor</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    TimeSeriesRegressor creates a time series model based on a</span>
+<span class="sd">    general-purpose regression model defined in base_estimator.</span>
+<span class="sd">    base_estimator must be a model which implements the scikit-learn APIs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_estimator</span><span class="p">,</span> <span class="o">**</span><span class="n">base_params</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        TimeSeriesRegressor creates a time series model based on a</span>
-<span class="sd">        general-purpose regression model defined in base_estimator.</span>
-<span class="sd">        base_estimator must be a model which implements the scikit-learn APIs.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span> <span class="o">=</span> <span class="n">base_estimator</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">base_params</span><span class="p">)</span>
 
 <div class="viewcode-block" id="TimeSeriesRegressor.set_params"><a class="viewcode-back" href="../core.html#core.TimeSeriesRegressor.set_params">[docs]</a>    <span class="k">def</span> <span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
@@ -167,154 +165,119 @@
         <span class="k">return</span> <span class="bp">self</span></div></div>
 
 
-<div class="viewcode-block" id="NARX"><a class="viewcode-back" href="../core.html#core.NARX">[docs]</a><span class="k">class</span> <span class="nc">NARX</span><span class="p">(</span><span class="n">TimeSeriesRegressor</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
+<div class="viewcode-block" id="GeneralAutoRegressor"><a class="viewcode-back" href="../core.html#core.GeneralAutoRegressor">[docs]</a><span class="k">class</span> <span class="nc">GeneralAutoRegressor</span><span class="p">(</span><span class="n">TimeSeriesRegressor</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The general auto regression model can be written in the following form:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        y(t + k) &amp;=&amp; f(y(t), ..., y(t-p+1), \\</span>
+<span class="sd">                 &amp; &amp; x_1(t - d_1), ..., x_1(t-d_1-q_1+1), \\</span>
+<span class="sd">                 &amp; &amp; ..., x_m(t - d_1), ..., x_m(t - d_m - q_m + 1)) + e(t)</span>
+<span class="sd">        :label: gar</span>
+
+<span class="sd">    :param object base_estimator: an estimator object that implements the</span>
+<span class="sd">                                  scikit-learn API (fit, and predict). The</span>
+<span class="sd">                                  estimator will be used to fit the function</span>
+<span class="sd">                                  :math:`f` in equation :eq:`gar`.</span>
+<span class="sd">    :param int auto_order: the autoregression order :math:`p` in equation</span>
+<span class="sd">                           :eq:`gar`.</span>
+<span class="sd">    :param list exog_order: the exogenous input order, a list of integers</span>
+<span class="sd">                            representing the order for each exogenous input,</span>
+<span class="sd">                            i.e. :math:`[q_1, q_2, ..., q_m]` in equation</span>
+<span class="sd">                            :eq:`gar`.</span>
+<span class="sd">    :param list exog_delay: the delays of the exogenous inputs, a list of</span>
+<span class="sd">                            integers representing the delay of each exogenous</span>
+<span class="sd">                            input, i.e. :math:`[d_1, d_2, ..., d_m]` in</span>
+<span class="sd">                            equation :eq:`gar`. By default, all the delays are</span>
+<span class="sd">                            set to 0.</span>
+<span class="sd">    :param int pred_step: the prediction step :math:`k` in equation :eq:`gar`.</span>
+<span class="sd">                          By default, it is set to 1.</span>
+<span class="sd">    :param dict base_params: other keyword arguments for base_estimator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">base_estimator</span><span class="p">,</span>
-                 <span class="n">auto_order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                 <span class="n">pred_step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                 <span class="n">exog_order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">auto_order</span><span class="p">,</span>
+                 <span class="n">exog_order</span><span class="p">,</span>
                  <span class="n">exog_delay</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pred_step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">base_params</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        NARX stands for Nonlinear AutoRegressive eXogenous model</span>
-<span class="sd">        (https://en.wikipedia.org/wiki/Nonlinear_autoregressive_exogenous_model).</span>
-<span class="sd">        This model generalizes the NARX model into the following form:</span>
-
-<span class="sd">        y(t + pred_step) = f(y(t), ..., y(t - auto_order + 1), x_1(t -</span>
-<span class="sd">        exog_delay[0]), ..., x_1(t - exog_delay[0] - exog_order[0] + 1),</span>
-<span class="sd">        ..., x_m(t - exog_delay[m-1]), ..., x_m(t - exog_delay[m-1] -</span>
-<span class="sd">        exog_order[m-1] + 1))</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">NARX</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">base_estimator</span><span class="p">,</span> <span class="o">**</span><span class="n">base_params</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GeneralAutoRegressor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">base_estimator</span><span class="p">,</span>
+                                                   <span class="o">**</span><span class="n">base_params</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">auto_order</span> <span class="o">=</span> <span class="n">auto_order</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exog_order</span> <span class="o">=</span> <span class="n">exog_order</span>
         <span class="k">if</span> <span class="n">exog_delay</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">exog_delay</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exog_order</span><span class="p">)</span>
+            <span class="n">exog_delay</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">exog_order</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exog_delay</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">exog_order</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The length of exog_delay must be the same as the length of exog_order.&#39;</span>
+            <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exog_delay</span> <span class="o">=</span> <span class="n">exog_delay</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pred_step</span> <span class="o">=</span> <span class="n">pred_step</span>
 
-<div class="viewcode-block" id="NARX.fit"><a class="viewcode-back" href="../core.html#core.NARX.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+<div class="viewcode-block" id="GeneralAutoRegressor.fit"><a class="viewcode-back" href="../core.html#core.GeneralAutoRegressor.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create lag features and fit the base_estimator.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            X : array-like, shape = (n_samples, n_features)</span>
-<span class="sd">                Exogenous input time series</span>
-
-<span class="sd">            y : array-like, shape = (n_samples)</span>
+<span class="sd">        :param array-like X: exogenous input time series, shape = (n_samples,</span>
+<span class="sd">                             n_exog_inputs)</span>
+<span class="sd">        :param array-like y: target time series to predict, shape = (n_samples)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">check_X_y</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_numeric</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">Xdata</span><span class="p">,</span> <span class="n">ydata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_data</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xdata</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exog_order</span><span class="p">)</span> <span class="o">!=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The number of columns of X must be the same as the length of exog_order.&#39;</span>
+            <span class="p">)</span>
+        <span class="n">features</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_preprocess_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">removeNA</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Generate lag features based on exog_order, exog_delay, auto_order,</span>
-<span class="sd">        and pred_step</span>
-
-<span class="sd">        Inputs</span>
-<span class="sd">        ------</span>
-<span class="sd">        X: feature matrix, shape: N * p, where N is the number of samples, and</span>
-<span class="sd">            p is the number of features</span>
-<span class="sd">        y: target vector, shape: N * 1</span>
-
-<span class="sd">        Outputs</span>
-<span class="sd">        -------</span>
-<span class="sd">        lag_features: lag feature matrix, in form of [y_lag_features,</span>
-<span class="sd">            X1_lag_features, ..., Xp_lag_features]</span>
-<span class="sd">            shape:</span>
-<span class="sd">            (N - max(max(exog_delay + exog_order) - 1, auto_order) + 1 - pred_step) *</span>
-<span class="sd">            (auto_order + sum(exog_order))</span>
-<span class="sd">        target: target vector shifted by pred_step, i.e. y(t + pred_step)</span>
-<span class="sd">            shape:</span>
-<span class="sd">            (N - max(max(exog_delay + exog_order), auto_order) + 1 - pred_step) * 1</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">y_lag</span> <span class="o">=</span> <span class="n">create_lag_features</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_order</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">X</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">lag_features</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">y_lag</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">X_lag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_input_lag_features</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-            <span class="n">lag_features</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">y_lag</span><span class="p">,</span> <span class="n">X_lag</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
+    <span class="k">def</span> <span class="nf">_preprocess_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lag_feature_processor</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">generate_lag_features</span><span class="p">()</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">shift</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pred_step</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">removeNA</span><span class="p">:</span>
-            <span class="n">all_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">target</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">lag_features</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">all_data</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">lag_features</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">lag_features</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">],</span> <span class="n">target</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span>
+        <span class="c1"># Remove NaN</span>
+        <span class="n">all_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">target</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">features</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">all_data</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">],</span> <span class="n">target</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">lag_features</span><span class="p">,</span> <span class="n">target</span>
+        <span class="k">return</span> <span class="n">features</span><span class="p">,</span> <span class="n">target</span>
 
-    <span class="k">def</span> <span class="nf">_create_input_lag_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
-        <span class="n">X_lag</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">Xcol</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exog_delay</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exog_order</span><span class="p">):</span>
-            <span class="n">X_shift</span> <span class="o">=</span> <span class="n">shift</span><span class="p">(</span><span class="n">Xcol</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
-            <span class="n">X_lag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">create_lag_features</span><span class="p">(</span><span class="n">X_shift</span><span class="p">,</span> <span class="n">order</span><span class="p">))</span>
-        <span class="n">X_lag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">X_lag</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">X_lag</span>
+    <span class="k">def</span> <span class="nf">_get_lag_feature_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span><span class="p">]</span>
+        <span class="n">orders</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">auto_order</span><span class="p">]</span>
+        <span class="n">delays</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">orders</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exog_order</span><span class="p">)</span>
+        <span class="n">delays</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exog_delay</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MetaLagFeatureProcessor</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">orders</span><span class="p">,</span> <span class="n">delays</span><span class="p">)</span>
 
-<div class="viewcode-block" id="NARX.grid_search"><a class="viewcode-back" href="../core.html#core.NARX.grid_search">[docs]</a>    <span class="k">def</span> <span class="nf">grid_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">para_grid</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+<div class="viewcode-block" id="GeneralAutoRegressor.grid_search"><a class="viewcode-back" href="../core.html#core.GeneralAutoRegressor.grid_search">[docs]</a>    <span class="k">def</span> <span class="nf">grid_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">para_grid</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform grid search on the base_estimator. The function first generates</span>
+<span class="sd">        the lag features and predicting targets, and then calls</span>
+<span class="sd">        ``GridSearchCV`` in scikit-learn package.</span>
+
+<span class="sd">        :param array-like X: exogenous input time series, shape = (n_samples,</span>
+<span class="sd">                             n_exog_inputs)</span>
+<span class="sd">        :param array-like y: target time series to predict, shape = (n_samples)</span>
+<span class="sd">        :param dict para_grid: use the same format in ``GridSearchCV`` in</span>
+<span class="sd">                               scikit-learn package.</span>
+<span class="sd">        :param dict params: other keyword arguments that can be passed into</span>
+<span class="sd">                            ``GridSearchCV`` in scikit-learn package.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">grid</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span> <span class="n">para_grid</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
         <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">check_X_y</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_numeric</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">Xdata</span><span class="p">,</span> <span class="n">ydata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_data</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
-        <span class="n">grid</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xdata</span><span class="p">,</span> <span class="n">ydata</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">grid</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">grid</span><span class="o">.</span><span class="n">best_params_</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="NARX.score"><a class="viewcode-back" href="../core.html#core.NARX.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;r2&quot;</span><span class="p">):</span>
-        <span class="n">ypred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ypred</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;r2&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">r2_score</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">],</span> <span class="n">ypred</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">])</span>
-        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;mse&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">],</span> <span class="n">ypred</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">])</span></div>
-
-    <span class="c1"># TODO: add forecast method</span>
-<div class="viewcode-block" id="NARX.predict"><a class="viewcode-back" href="../core.html#core.NARX.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">step</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_step</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Cannot perform multi-step prediction when pred_step is larger than 1.&quot;</span>
-            <span class="p">)</span>
-
-        <span class="n">Xchk</span><span class="p">,</span> <span class="n">ychk</span> <span class="o">=</span> <span class="n">check_X_y</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_numeric</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">Xdata</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_data</span><span class="p">(</span><span class="n">ychk</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">Xchk</span><span class="p">,</span> <span class="n">removeNA</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">step</span><span class="p">):</span>
-            <span class="n">yhat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predictNA</span><span class="p">(</span><span class="n">Xdata</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">step</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">break</span>
-            <span class="n">Xdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_lag_features</span><span class="p">(</span><span class="n">Xdata</span><span class="p">,</span> <span class="n">yhat</span><span class="p">)</span>
-
-        <span class="n">pred_step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pred_step</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
-        <span class="n">ypred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">pred_step</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">yhat</span><span class="p">])[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)]</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
-            <span class="n">ypred</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">ypred</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">ypred</span></div>
 
     <span class="k">def</span> <span class="nf">_predictNA</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xdata</span><span class="p">):</span>
         <span class="n">ypred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">Xdata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Xdata</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">X2pred</span> <span class="o">=</span> <span class="n">Xdata</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span>
         <span class="n">ypred</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X2pred</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ypred</span>
-
-    <span class="k">def</span> <span class="nf">_update_lag_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xdata</span><span class="p">,</span> <span class="n">yhat</span><span class="p">):</span>
-        <span class="c1"># update y_lag_features</span>
-        <span class="n">Xdata</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">auto_order</span><span class="p">]</span> <span class="o">=</span> <span class="n">Xdata</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">auto_order</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="n">Xdata</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">yhat</span>
-
-        <span class="c1"># update x_lag_features</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exog_order</span><span class="p">):</span>
-            <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_order</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exog_order</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
-            <span class="n">Xdata</span><span class="p">[:,</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">Xdata</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-            <span class="n">Xdata</span><span class="p">[:,</span> <span class="n">start</span><span class="p">]</span> <span class="o">=</span> <span class="n">shift</span><span class="p">(</span><span class="n">Xdata</span><span class="p">[:,</span> <span class="n">start</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Xdata</span></div>
+        <span class="k">return</span> <span class="n">ypred</span></div>
 </pre></div>
 
            </div>

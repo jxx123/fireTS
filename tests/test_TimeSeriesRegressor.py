@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression, Ridge
-from fireTS.core import NARX
+from fireTS.models import NARX
 from fireTS.utils import shift
 import numpy as np
 import pytest
@@ -16,7 +16,7 @@ def test_TimeSeriesRegressor_create_features(na, nb, nk):
     y = pd.Series(np.random.randn(100))
     mdl = NARX(LinearRegression(), auto_order=na, exog_order=nb, exog_delay=nk)
 
-    Xfeatures_act, ytarget_act = mdl._preprocess_data(y.values, X=X.values)
+    Xfeatures_act, ytarget_act = mdl._preprocess_data(X.values, y.values)
 
     Xfeatures_exp, ytarget_exp = helper_preprocess(X, y, na, nb, nk)
 
@@ -75,7 +75,7 @@ def test_TimeSeriesRegressor_predict():
 
     X1 = copy.deepcopy(Xfeatures_exp)
     X2 = copy.deepcopy(Xfeatures_exp)
-    Xfeatures_updated = mdl._update_lag_features(X1, ypred_exp1)
+    # Xfeatures_updated = mdl._update_lag_features(X1, ypred_exp1)
 
     X2[:, 1:3] = X2[:, 0:2]
     X2[:, 0] = ypred_exp1
@@ -87,32 +87,13 @@ def test_TimeSeriesRegressor_predict():
     X2[:, 6] = shift(X2[:, 6], -1)
     mask = ~np.isnan(X2).any(axis=1)
 
-    np.testing.assert_array_equal(Xfeatures_updated, X2)
-
     ypred_exp2 = np.empty(X2.shape[0]) * np.nan
     ypred_exp2[mask] = kernel_mdl.predict(X2[mask, :])
     ypred_exp2 = np.concatenate([np.empty(2) * np.nan, ypred_exp2])[0:len(y)]
 
-    np.testing.assert_array_almost_equal(ypred_act.values, ypred_exp2)
-
-
-def test_TimeSeriesRegressor_predict_error():
-    np.random.seed(0)
-    X = pd.DataFrame(np.random.randn(100, 2))
-    y = pd.Series(np.random.randn(100))
-    na = 3
-    nb = [3, 3]
-    nk = [1, 1]
-    mdl = NARX(
-        LinearRegression(),
-        auto_order=na,
-        exog_order=nb,
-        exog_delay=nk,
-        pred_step=6)
-
-    mdl.fit(X, y)
-    with pytest.raises(ValueError):
-        ypred_act = mdl.predict(X, y, step=2)
+    # print(X2)
+    # print(ypred_act)
+    np.testing.assert_array_almost_equal(ypred_act, ypred_exp2)
 
 
 def test_TimeSeriesRegressor_grid_search():
@@ -122,8 +103,7 @@ def test_TimeSeriesRegressor_grid_search():
     na = 3
     nb = [3, 3]
     nk = [1, 1]
-    mdl = NARX(
-        Ridge(), auto_order=na, exog_order=nb, exog_delay=nk, pred_step=6)
+    mdl = NARX(Ridge(), auto_order=na, exog_order=nb, exog_delay=nk)
 
     para_grid = {'alpha': [0, 0.1, 0.3]}
     mdl.grid_search(X, y, para_grid)

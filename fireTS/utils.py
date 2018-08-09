@@ -1,26 +1,5 @@
 import numpy as np
-
-
-def create_lag_features(data, num_lag):
-    """
-    Utility function to create lag features
-
-    Inputs
-    ------
-    data: 1-d numpy array
-        data to derive lag features
-    num_lag: positive integer
-        number of lag features to create
-
-    Outputs
-    -------
-    lag_features: a 2-d numpy array, with number of rows = input length, number
-    of columns = order
-    """
-    lag_features = []
-    for k in range(num_lag):
-        lag_features.append(shift(data, k))
-    return np.array(lag_features).T
+from collections import deque
 
 
 def shift(darray, k, axis=0):
@@ -30,6 +9,7 @@ def shift(darray, k, axis=0):
     Inputs
     ------
     darray: a numpy array
+        the array to be shifted.
     k: integer
         number of shift
     axis: non-negative integer
@@ -49,3 +29,43 @@ def shift(darray, k, axis=0):
         shift_array = np.roll(darray, k, axis=axis)
         shift_array[:k] = np.nan
         return shift_array
+
+
+class LagFeatureProcessor(object):
+    def __init__(self, data, order, delay):
+        self._data = data
+        self._lags = deque(range(delay, delay + order))
+
+    def generate_lag_features(self, data_new=None):
+        features = [shift(self._data, l) for l in self._lags]
+        if data_new is not None:
+            features[0] = data_new
+        return np.array(features).T
+
+    def update(self, data_new=None):
+        self._lags.pop()
+        self._lags.appendleft(self._lags[0] - 1)
+        return self.generate_lag_features(data_new=data_new)
+
+
+class MetaLagFeatureProcessor(object):
+    def __init__(self, data, orders, delays):
+        self._lag_feature_processors = [
+            LagFeatureProcessor(d, order, delay)
+            for d, order, delay in zip(data, orders, delays)
+        ]
+
+    def generate_lag_features(self):
+        lag_feature_list = [
+            p.generate_lag_features() for p in self._lag_feature_processors
+        ]
+        lag_features = np.concatenate(lag_feature_list, axis=1)
+        return lag_features
+
+    def update(self, data_new):
+        lag_feature_list = [
+            p.update(data_new=d)
+            for d, p in zip(data_new, self._lag_feature_processors)
+        ]
+        lag_features = np.concatenate(lag_feature_list, axis=1)
+        return lag_features

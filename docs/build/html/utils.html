@@ -145,29 +145,47 @@
             
   <div class="section" id="module-utils">
 <span id="utils-module"></span><h1>utils module<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="utils.create_lag_features">
-<code class="descclassname">utils.</code><code class="descname">create_lag_features</code><span class="sig-paren">(</span><em>data</em>, <em>num_lag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#create_lag_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.create_lag_features" title="Permalink to this definition">¶</a></dt>
-<dd><p>Utility function to create lag features</p>
-<dl class="docutils">
-<dt>data: 1-d numpy array</dt>
-<dd>data to derive lag features</dd>
-<dt>num_lag: positive integer</dt>
-<dd>number of lag features to create</dd>
-</dl>
-<p>lag_features: a 2-d numpy array, with number of rows = input length, number
-of columns = order</p>
+<dl class="class">
+<dt id="utils.LagFeatureProcessor">
+<em class="property">class </em><code class="descclassname">utils.</code><code class="descname">LagFeatureProcessor</code><span class="sig-paren">(</span><em>data</em>, <em>order</em>, <em>delay</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#LagFeatureProcessor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.LagFeatureProcessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="utils.LagFeatureProcessor.generate_lag_features">
+<code class="descname">generate_lag_features</code><span class="sig-paren">(</span><em>data_new=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#LagFeatureProcessor.generate_lag_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.LagFeatureProcessor.generate_lag_features" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="utils.LagFeatureProcessor.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>data_new=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#LagFeatureProcessor.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.LagFeatureProcessor.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="utils.MetaLagFeatureProcessor">
+<em class="property">class </em><code class="descclassname">utils.</code><code class="descname">MetaLagFeatureProcessor</code><span class="sig-paren">(</span><em>data</em>, <em>orders</em>, <em>delays</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#MetaLagFeatureProcessor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.MetaLagFeatureProcessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="utils.MetaLagFeatureProcessor.generate_lag_features">
+<code class="descname">generate_lag_features</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#MetaLagFeatureProcessor.generate_lag_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.MetaLagFeatureProcessor.generate_lag_features" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="utils.MetaLagFeatureProcessor.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>data_new</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#MetaLagFeatureProcessor.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.MetaLagFeatureProcessor.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="function">
 <dt id="utils.shift">
 <code class="descclassname">utils.</code><code class="descname">shift</code><span class="sig-paren">(</span><em>darray</em>, <em>k</em>, <em>axis=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.shift" title="Permalink to this definition">¶</a></dt>
 <dd><p>Utility function to shift a numpy array</p>
-<p>darray: a numpy array
-k: integer</p>
-<blockquote>
-<div>number of shift</div></blockquote>
 <dl class="docutils">
+<dt>darray: a numpy array</dt>
+<dd>the array to be shifted.</dd>
+<dt>k: integer</dt>
+<dd>number of shift</dd>
 <dt>axis: non-negative integer</dt>
 <dd>axis to perform shift operation</dd>
 </dl>

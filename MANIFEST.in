@@ -1,0 +1,6 @@
+include fireTS/*.py
+include LICENSE
+include *.py
+include tests/*.py
+recursive-include docs * *.*
+include README.md

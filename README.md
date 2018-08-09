@@ -1,38 +1,32 @@
-# README #
+# fireTS #
 
-fireTS, a sklean style api for time-series prediction.
+`fireTS` is a sklean style package for multi-variate time-series prediction. I
+developed this package when writing [this
+paper](http://ceur-ws.org/Vol-2148/paper16.pdf). The paper introduced two
+methods to perform multi-step prediction: recursive method and direct method.
+`fireTS.models.NARX` model is trying to train a one-step-ahead-prediction model
+and make multi-step prediction recursively given the future exogenous inputs.
+`fireTS.models.DirectAutoRegressor` model is trying to train a
+multi-step-head-prediction model directly. No future exogenous inputs are
+required to make the multi-step prediction.
 
-### What is this repository for? ###
-
-* Quick summary
-
-A sklearn api to perform time-series prediction. The api implements two functionalities:
-
-- Create lag features from inputs/predictors/features and outputs/response/target with flexible lag steps selection
-- Multi-step prediction given future inputs/predictors/features
-
-* Version 0.0.0
-
-### How do I get set up? ###
-
-* Summary of set up
+## Installation ##
+It is highly recommended to use `pip` to install `fireTS`, follow this
+ [link](https://pip.pypa.io/en/stable/installing/) to install pip.
+ 
+After pip is installed, 
 ```
-pip install -e .
+pip install firets
 ```
-* Configuration
+
+To get the latest development version, 
+```
+git clone 
+```
+
+
 * Dependencies
-sklearn
-* How to run tests
-* Deployment instructions
+ - numpy
+ - sklearn
 
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-Jinyu Xie, xjygr08@gmail.com
-* Other community or team contact
+## Quick Start ##
