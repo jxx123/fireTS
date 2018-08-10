@@ -89,7 +89,7 @@ class NARX(GeneralAutoRegressor):
         :return: k-step prediction time series, shape = (n_samples). The
                  :math:`i` th value of the output is the k-step prediction of
                  the :math:`i` th value of the input ``y``. The first ``step +
-                 max(auto_order, max(exog_order + exog_delay))`` values of the
+                 max(auto_order - 1, max(exog_order + exog_delay))`` values of the
                  output is ``np.nan``.
         """
         X, y = check_X_y(X, y, y_numeric=True)
@@ -121,25 +121,25 @@ class DirectAutoRegressor(GeneralAutoRegressor):
         y(t + k) &=& f(y(t), ..., y(t-p+1), \\
                  & & x_1(t - d_1), ..., x_1(t-d_1-q_1+1), \\
                  & & ..., x_m(t - d_1), ..., x_m(t - d_m - q_m + 1)) + e(t)
-        :label: narx
+        :label: direct
 
     :param object base_estimator: an estimator object that implements the
                                   scikit-learn API (fit, and predict). The
                                   estimator will be used to fit the function
-                                  :math:`f` in equation :eq:`narx`.
+                                  :math:`f` in equation :eq:`direct`.
     :param int auto_order: the autoregression order :math:`p` in equation
-                           :eq:`narx`.
+                           :eq:`direct`.
     :param list exog_order: the exogenous input order, a list of integers
                             representing the order for each exogenous input,
                             i.e. :math:`[q_1, q_2, ..., q_m]` in equation
-                            :eq:`narx`.
+                            :eq:`direct`.
     :param int pred_step: the prediction step :math:`k` in equation :eq:`gar`.
                           By default, it is set to 1.
     :param list exog_delay: the delays of the exogenous inputs, a list of
                             integers representing the delay of each exogenous
                             input, i.e. :math:`[d_1, d_2, ..., d_m]` in
-                            equation :eq:`narx`. By default, all the delays are
-                            set to 0.
+                            equation :eq:`direct`. By default, all the delays
+                            are set to 0.
     :param dict base_params: other keyword arguments for base_estimator.
     """
 
@@ -150,7 +150,7 @@ class DirectAutoRegressor(GeneralAutoRegressor):
                  pred_step,
                  exog_delay=None,
                  **base_params):
-        super(NARX, self).__init__(
+        super(DirectAutoRegressor, self).__init__(
             base_estimator,
             auto_order,
             exog_order,
@@ -165,7 +165,7 @@ class DirectAutoRegressor(GeneralAutoRegressor):
         equation is as follows:
 
         .. math::
-            \hat{y}(t + k) &=&  f(y(t - 1), ..., y(t - p + 1), \\
+            \hat{y}(t + k) &=&  f(y(t), ..., y(t - p + 1), \\
                            & & x_1(t - d_1), ..., x_1(t - d_1 - q_1 + 1) \\
                            & & ..., x_m(t - d_m), ..., x_m(t - d_m - q_m + 1))
 
@@ -176,9 +176,9 @@ class DirectAutoRegressor(GeneralAutoRegressor):
 
         :return: k-step prediction time series, shape = (n_samples). The
                  :math:`i` th value of the output is the k-step prediction of
-                 the :math:`i` th value of the input ``y``. The first ``step +
-                 max(auto_order, max(exog_order + exog_delay))`` values of the
-                 output is ``np.nan``.
+                 the :math:`i` th value of the input ``y``. The first
+                 ``pred_step + max(auto_order - 1, max(exog_order +
+                 exog_delay))`` values of the output is ``np.nan``.
         """
         X, y = check_X_y(X, y, y_numeric=True)
         if len(self.exog_order) != X.shape[1]:
