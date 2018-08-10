@@ -1,5 +1,4 @@
 import numpy as np
-from collections import deque
 
 
 def shift(darray, k, axis=0):
@@ -34,7 +33,7 @@ def shift(darray, k, axis=0):
 class LagFeatureProcessor(object):
     def __init__(self, data, order, delay):
         self._data = data
-        self._lags = deque(range(delay, delay + order))
+        self._lags = np.array(range(delay, delay + order))
 
     def generate_lag_features(self, data_new=None):
         features = [shift(self._data, l) for l in self._lags]
@@ -43,8 +42,7 @@ class LagFeatureProcessor(object):
         return np.array(features).T
 
     def update(self, data_new=None):
-        self._lags.pop()
-        self._lags.appendleft(self._lags[0] - 1)
+        self._lags = self._lags - 1
         return self.generate_lag_features(data_new=data_new)
 
 
