@@ -166,5 +166,5 @@ class Mock(MagicMock):
         return MagicMock()
 
 
-MOCK_MODULES = ['numpy', 'scipy', 'scikit-learn']
+MOCK_MODULES = ['numpy', 'scipy']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)

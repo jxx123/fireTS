@@ -3,7 +3,7 @@ import os
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if on_rtd:
-    dependencies = []
+    dependencies = ['scikit-learn']
 else:
     dependencies = [
         'numpy',
