@@ -166,7 +166,7 @@ class Mock(MagicMock):
 
 
 MOCK_MODULES = [
-    'numpy', 'scipy', 'scipy.sparse', 'sklearn.base',
-    'sklearn.utils.validation', 'sklearn.model_selection', 'murmurhash3_32'
+    'numpy', 'scipy', 'sklearn.base', 'sklearn.utils.validation',
+    'sklearn.model_selection'
 ]
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
