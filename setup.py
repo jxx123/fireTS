@@ -13,7 +13,7 @@ setup(
     packages=['fireTS'],
     install_requires=[
         'numpy',
-        'sklearn',
+        'scikit-learn',
     ],
     include_package_data=True,
     zip_safe=False)
