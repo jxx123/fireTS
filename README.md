@@ -3,8 +3,7 @@
 
 `fireTS` is a sklean style package for multi-variate time-series prediction. I
 developed this package when writing [this
-paper](http://ceur-ws.org/Vol-2148/paper16.pdf). The paper introduced two
-methods to perform multi-step prediction: recursive method and direct method.
+paper](http://ceur-ws.org/Vol-2148/paper16.pdf). It is really handy to generate lag features and leverage various regression algorithms provided by sklearn to build non-linear multi-variate time series models. The API can also be used to build deep neural network models to make time-series prediction. [The paper](http://ceur-ws.org/Vol-2148/paper16.pdf) used this package to build LSTM models and make multi-step predictions.
 
 The documentation can be found [here](https://firets.readthedocs.io/en/latest/). The documentation provides the mathematical equations of each model. It is highly recommended to read the documentation before using the model.
 
@@ -54,7 +53,7 @@ pip install -e .
 ```
 
 ## Quick Start ##
-- Usage of `NARX` model
+- Use `RandomForestRegressor` as base model to build a `NARX` model
 ```python
 from fireTS.models import NARX
 from sklearn.ensemble import RandomForestRegressor
@@ -66,7 +65,7 @@ mdl = NARX(RandomForestRegressor(), auto_order=2, exog_order=[2], exog_delay=[1]
 mdl.fit(x, y)
 ypred = mdl.predict(x, y, step=3)
 ```
-- Usage of `DirectAutoRegressor` model
+- Use `RandomForestRegressor` as base model to build a `DirectAutoRegressor` model
 ```python
 from fireTS.models import DirectAutoRegressor
 from sklearn.ensemble import RandomForestRegressor
