@@ -14,6 +14,7 @@
 #
 import os
 import sys
+from unittest.mock import MagicMock
 sys.path.insert(0, os.path.abspath('../../fireTS'))
 
 # -- Project information -----------------------------------------------------
@@ -156,4 +157,14 @@ texinfo_documents = [
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-auto_doc_mock_imports = ['numpy', 'sklearn']
+auto_doc_mock_imports = ['numpy', 'scikit-learn']
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+
+MOCK_MODULES = ['numpy', 'scipy', 'scikit-learn']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
