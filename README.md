@@ -1,4 +1,5 @@
 # fireTS #
+[![Documentation Status](https://readthedocs.org/projects/firets/badge/?version=latest)](https://firets.readthedocs.io/en/latest/?badge=latest)
 
 `fireTS` is a sklean style package for multi-variate time-series prediction. I
 developed this package when writing [this
