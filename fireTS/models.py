@@ -89,7 +89,7 @@ class NARX(GeneralAutoRegressor):
         :return: k-step prediction time series, shape = (n_samples). The
                  :math:`i` th value of the output is the k-step prediction of
                  the :math:`i` th value of the input ``y``. The first ``step +
-                 max(auto_order - 1, max(exog_order + exog_delay))`` values of the
+                 max(auto_order - 1, max(exog_order + exog_delay) - 1)`` values of the
                  output is ``np.nan``.
         """
         X, y = check_X_y(X, y, y_numeric=True)
@@ -178,7 +178,7 @@ class DirectAutoRegressor(GeneralAutoRegressor):
                  :math:`i` th value of the output is the k-step prediction of
                  the :math:`i` th value of the input ``y``. The first
                  ``pred_step + max(auto_order - 1, max(exog_order +
-                 exog_delay))`` values of the output is ``np.nan``.
+                 exog_delay) - 1)`` values of the output is ``np.nan``.
         """
         X, y = check_X_y(X, y, y_numeric=True)
         if len(self.exog_order) != X.shape[1]:
