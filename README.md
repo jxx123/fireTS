@@ -6,6 +6,8 @@ developed this package when writing [this
 paper](http://ceur-ws.org/Vol-2148/paper16.pdf). The paper introduced two
 methods to perform multi-step prediction: recursive method and direct method.
 
+The documentation can be found [here](https://firets.readthedocs.io/en/latest/).
+
 - `fireTS.models.NARX` model is trying to train a one-step-ahead-prediction model
 and make multi-step prediction recursively given the future exogenous inputs.
 
@@ -28,10 +30,5 @@ git clone https://github.com/jxx123/fireTS.git
 cd fireTS
 pip install -e .
 ```
-
-
-* Dependencies
- - numpy
- - sklearn
 
 ## Quick Start ##

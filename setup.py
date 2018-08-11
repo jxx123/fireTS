@@ -1,14 +1,9 @@
 from setuptools import setup
-import os
 
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
-if on_rtd:
-    dependencies = ['numpy', 'scipy', 'scikit-learn']
-else:
-    dependencies = [
-        'numpy',
-        'scikit-learn',
-    ]
+dependencies = [
+    'numpy',
+    'scikit-learn',
+]
 
 setup(
     name='fireTS',
