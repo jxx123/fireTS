@@ -37,6 +37,7 @@ ypred2 = mdl2.predict(x, y)
 - Plug-and-go. You are able to plug in any machine learning regression algorithms provided in `sklearn` package and build a time-series forecasting model.
 - Create the lag features for you by specifying the autoregression order `auto_order`, the exogenous input order `exog_order`, and the exogenous input delay `exog_delay`.
 - Support multi-step prediction. The package can make multi-step prediction in two different ways: recursive way and direct way. `NARX` model is to build a one-step-ahead-predictive model, and the model will be used recursively to make multi-step prediction (future exogenous input information is needed). `DirectAutoRegressor` makes multi-step prediction directly (no future exogenous input information is needed) by specifying the prediction step in the constructor.
+- Support grid search to tune the hyper-parameters of the base model (cannot do grid search on the orders and delays of the time series model for now). 
 
 I developed this package when writing [this paper](http://ceur-ws.org/Vol-2148/paper16.pdf). It is really handy to generate lag features and leverage various regression algorithms provided by sklearn to build non-linear multi-variate time series models. The API can also be used to build deep neural network models to make time-series prediction. [The paper](http://ceur-ws.org/Vol-2148/paper16.pdf) used this package to build LSTM models and make multi-step predictions.
 
