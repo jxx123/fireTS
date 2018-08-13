@@ -1,9 +1,44 @@
 # fireTS #
 [![Documentation Status](https://readthedocs.org/projects/firets/badge/?version=latest)](https://firets.readthedocs.io/en/latest/?badge=latest)
 
-`fireTS` is a sklean style package for multi-variate time-series prediction. I
-developed this package when writing [this
-paper](http://ceur-ws.org/Vol-2148/paper16.pdf). It is really handy to generate lag features and leverage various regression algorithms provided by sklearn to build non-linear multi-variate time series models. The API can also be used to build deep neural network models to make time-series prediction. [The paper](http://ceur-ws.org/Vol-2148/paper16.pdf) used this package to build LSTM models and make multi-step predictions.
+`fireTS` is a sklean style package for multi-variate time-series prediction. Here is a simple code snippet to showcase the awesome features provided by `fireTS` package.
+```python
+from fireTS.models import NARX, DirectAutoRegressor
+from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
+import numpy as np
+
+# Random training data
+x = np.random.randn(100, 2)
+y = np.random.randn(100)
+
+# Build a non-linear autoregression model with exogenous inputs
+# using Random Forest regression as the base model
+mdl1 = NARX(
+    RandomForestRegressor(n_estimators=10),
+    auto_order=2,
+    exog_order=[2, 2],
+    exog_delay=[1, 1])
+mdl1.fit(x, y)
+ypred1 = mdl1.predict(x, y, step=3)
+
+# Build a general autoregression model and make multi-step prediction directly
+# using XGBRegressor as the base model
+mdl2 = DirectAutoRegressor(
+    XGBRegressor(n_estimators=10),
+    auto_order=2,
+    exog_order=[2, 2],
+    exog_delay=[1, 1],
+    pred_step=3)
+mdl2.fit(x, y)
+ypred2 = mdl2.predict(x, y)
+```
+- `sklearn` style API. The package provides `fit` and `predict` methods, which is very similar to `sklearn` package. 
+- Plug-and-go. You are able to plug in any machine learning regression algorithms provided in `sklearn` package and build a time-series forecasting model.
+- Create the lag features for you by specifying the autoregression order `auto_order`, the exogenous input order `exog_order`, and the exogenous input delay `exog_delay`.
+- Support multi-step prediction. The package can make multi-step prediction in two different ways: recursive way and direct way. `NARX` model is to build a one-step-ahead-predictive model, and the model will be used recursively to make multi-step prediction (future exogenous input information is needed). `DirectAutoRegressor` makes multi-step prediction directly (no future exogenous input information is needed) by specifying the prediction step in the constructor.
+
+I developed this package when writing [this paper](http://ceur-ws.org/Vol-2148/paper16.pdf). It is really handy to generate lag features and leverage various regression algorithms provided by sklearn to build non-linear multi-variate time series models. The API can also be used to build deep neural network models to make time-series prediction. [The paper](http://ceur-ws.org/Vol-2148/paper16.pdf) used this package to build LSTM models and make multi-step predictions.
 
 The documentation can be found [here](https://firets.readthedocs.io/en/latest/). The documentation provides the mathematical equations of each model. It is highly recommended to read the documentation before using the model.
 
@@ -15,7 +50,7 @@ Given the output time series to predict `y(t)` and exogenous inputs `X(t)` The m
 
 | Target | Features |
 | ------------- |:-------------:|
-| y(t+1) | y(t), y(t - 1), ..., y(t - p + 1), X(t - d), X(t - d - 1), ..., X(t - d - q + 1) |
+| y(t + 1) | y(t), y(t - 1), ..., y(t - p + 1), X(t - d), X(t - d - 1), ..., X(t - d - q + 1) |
 
 where p is the autogression order `auto_order`, q is the exogenous input order `exog_order`, d is the exogenous delay `exog_delay`.
 
