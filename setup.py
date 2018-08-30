@@ -2,6 +2,7 @@ from setuptools import setup
 
 dependencies = [
     'numpy',
+    'scipy',
     'scikit-learn',
 ]
 
