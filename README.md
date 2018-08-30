@@ -73,6 +73,8 @@ where p is the autogression order `auto_order`, q is the exogenous input order `
 Direct autoregressor does not require future exogenous input information to make multi-step prediction. Its `predict` method cannot specify prediction step.
 
 ## Installation ##
+**NOTE**: Only python3 is supported.
+
 It is highly recommended to use `pip` to install `fireTS`, follow this
  [link](https://pip.pypa.io/en/stable/installing/) to install pip.
  
