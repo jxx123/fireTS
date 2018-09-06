@@ -13,6 +13,13 @@ def test_NARX():
     ypred = mdl.predict(x, y, step=3)
     print(ypred)
 
+    x = np.random.randn(100, 1)
+    y = np.random.randn(100)
+    mdl = NARX(RandomForestRegressor(), auto_order=1, exog_order=[1])
+    mdl.fit(x, y)
+    ypred = mdl.predict(x, y, step=3)
+    print(ypred)
+
 
 def test_direct():
     x = np.random.randn(100, 1)

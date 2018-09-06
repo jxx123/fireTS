@@ -92,7 +92,8 @@ class NARX(GeneralAutoRegressor):
                  max(auto_order - 1, max(exog_order + exog_delay) - 1)`` values of the
                  output is ``np.nan``.
         """
-        X, y = check_X_y(X, y, y_numeric=True)
+        # TODO: this allows nan in X and y, but might need more error checking
+        X, y = np.array(X), np.array(y)
         if len(self.exog_order) != X.shape[1]:
             raise ValueError(
                 'The number of columns of X must be the same as the length of exog_order.'
@@ -104,9 +105,7 @@ class NARX(GeneralAutoRegressor):
             yhat = self._predictNA(features)
             if k == step - 1:
                 break
-            data_new = [yhat]
-            data_new.extend([None] * len(self.exog_order))
-            features = p.update(data_new)
+            features = p.update(yhat)
 
         ypred = np.concatenate([np.empty(step) * np.nan, yhat])[0:len(y)]
         return ypred
@@ -180,7 +179,8 @@ class DirectAutoRegressor(GeneralAutoRegressor):
                  ``pred_step + max(auto_order - 1, max(exog_order +
                  exog_delay) - 1)`` values of the output is ``np.nan``.
         """
-        X, y = check_X_y(X, y, y_numeric=True)
+        # TODO: this allows nan in X and y, but might need more error checking
+        X, y = np.array(X), np.array(y)
         if len(self.exog_order) != X.shape[1]:
             raise ValueError(
                 'The number of columns of X must be the same as the length of exog_order.'

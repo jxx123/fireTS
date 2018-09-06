@@ -1,4 +1,4 @@
-from fireTS.utils import shift, LagFeatureProcessor, MetaLagFeatureProcessor
+from fireTS.utils import shift, InputLagFeatureProcessor, MetaLagFeatureProcessor
 from fireTS.models import NARX
 from sklearn.linear_model import LinearRegression
 import numpy as np
@@ -47,12 +47,12 @@ def test_shift():
 def test_create_lag_features():
     x = np.array([1., 2., 3., 4.])
 
-    p = LagFeatureProcessor(x, 2, 0)
+    p = InputLagFeatureProcessor(x, 2, 0)
     lag1 = p.generate_lag_features()
     exp1 = np.array([[1., 2., 3., 4.], [np.nan, 1., 2., 3.]]).T
     np.testing.assert_array_equal(lag1, exp1)
 
-    p = LagFeatureProcessor(x, 3, 0)
+    p = InputLagFeatureProcessor(x, 3, 0)
     lag2 = p.generate_lag_features()
     exp2 = np.array([[1., 2., 3., 4.], [np.nan, 1., 2., 3.],
                      [np.nan, np.nan, 1., 2.]]).T
@@ -84,14 +84,9 @@ def test_update_lag_features():
     y = np.array([1., 5., 7., 4., 6., 3., 2.])
     ypred = np.array([5., 7., 4., 6., 3., 2., 1.])
 
-    data = [y]
-    data.extend(X.T)
+    p = MetaLagFeatureProcessor(X, y, 2, [2, 3], [1, 2])
 
-    p = MetaLagFeatureProcessor(data, [2, 2, 3], [0, 1, 2])
-    data_new = [ypred]
-    data_new.extend([None] * 2)
-
-    X_updated = p.update(data_new)
+    X_updated = p.update(ypred)
 
     X_exp = np.array([[5., 1., 1., np.nan, np.nan, np.nan, np.nan], [
         7., 5., 2., 1., 3., np.nan, np.nan
@@ -99,6 +94,17 @@ def test_update_lag_features():
                                           3.], [3., 6., 5., 3., 8., 6., 7.],
                       [2., 3., 2.5, 5., 5., 8.,
                        6.], [1., 2., 3., 2.5, 4.5, 5., 8.]])
+    np.testing.assert_array_equal(X_updated, X_exp)
+
+    ypred = np.array([7., 4., 6., 3., 2., 1., 3.])
+    X_updated = p.update(ypred)
+    X_exp = np.array([[7., 5., 2., 1., 3., np.nan,
+                       np.nan], [4., 7., 4., 2., 7., 3.,
+                                 np.nan], [6., 4., 3., 4., 6., 7.,
+                                           3.], [3., 6., 5., 3., 8., 6., 7.],
+                      [2., 3., 2.5, 5., 5., 8.,
+                       6.], [1., 2., 3., 2.5, 4.5, 5.,
+                             8.], [3., 1., np.nan, 3., 3.8, 4.5, 5.]])
     np.testing.assert_array_equal(X_updated, X_exp)
 
 

@@ -1,4 +1,5 @@
 import numpy as np
+from collections import deque
 
 
 def shift(darray, k, axis=0):
@@ -30,28 +31,44 @@ def shift(darray, k, axis=0):
         return shift_array
 
 
-class LagFeatureProcessor(object):
+class OutputLagFeatureProcessor:
+    def __init__(self, data, order):
+        self._feature_queue = deque([shift(data, l) for l in range(order)])
+
+    def generate_lag_features(self):
+        return np.array(self._feature_queue).T
+
+    def update(self, data_new):
+        # TODO: this is not memory efficient, need to do this in a
+        # better way in the future
+        self._feature_queue.appendleft(data_new)
+        self._feature_queue.pop()
+        return np.array(self._feature_queue).T
+
+
+class InputLagFeatureProcessor:
     def __init__(self, data, order, delay):
         self._data = data
         self._lags = np.array(range(delay, delay + order))
 
-    def generate_lag_features(self, data_new=None):
+    def generate_lag_features(self):
         features = [shift(self._data, l) for l in self._lags]
-        if data_new is not None:
-            features[0] = data_new
         return np.array(features).T
 
-    def update(self, data_new=None):
+    def update(self):
         self._lags = self._lags - 1
-        return self.generate_lag_features(data_new=data_new)
+        return self.generate_lag_features()
 
 
 class MetaLagFeatureProcessor(object):
-    def __init__(self, data, orders, delays):
+    def __init__(self, X, y, auto_order, exog_order, exog_delay):
         self._lag_feature_processors = [
-            LagFeatureProcessor(d, order, delay)
-            for d, order, delay in zip(data, orders, delays)
+            OutputLagFeatureProcessor(y, auto_order)
         ]
+        self._lag_feature_processors.extend([
+            InputLagFeatureProcessor(data, order, delay)
+            for data, order, delay in zip(X.T, exog_order, exog_delay)
+        ])
 
     def generate_lag_features(self):
         lag_feature_list = [
@@ -62,8 +79,8 @@ class MetaLagFeatureProcessor(object):
 
     def update(self, data_new):
         lag_feature_list = [
-            p.update(data_new=d)
-            for d, p in zip(data_new, self._lag_feature_processors)
+            p.update(data_new) if i == 0 else p.update()
+            for i, p in enumerate(self._lag_feature_processors)
         ]
         lag_features = np.concatenate(lag_feature_list, axis=1)
         return lag_features

@@ -82,7 +82,8 @@ class GeneralAutoRegressor(TimeSeriesRegressor, RegressorMixin):
                              n_exog_inputs)
         :param array-like y: target time series to predict, shape = (n_samples)
         """
-        X, y = check_X_y(X, y, y_numeric=True)
+        # TODO: this allows nan in X and y, but might need more error checking
+        X, y = np.array(X), np.array(y)
         if len(self.exog_order) != X.shape[1]:
             raise ValueError(
                 'The number of columns of X must be the same as the length of exog_order.'
@@ -103,13 +104,8 @@ class GeneralAutoRegressor(TimeSeriesRegressor, RegressorMixin):
         return features, target
 
     def _get_lag_feature_processor(self, X, y):
-        data = [y]
-        orders = [self.auto_order]
-        delays = [0]
-        data.extend(X.T)
-        orders.extend(self.exog_order)
-        delays.extend(self.exog_delay)
-        return MetaLagFeatureProcessor(data, orders, delays)
+        return MetaLagFeatureProcessor(X, y, self.auto_order, self.exog_order,
+                                       self.exog_delay)
 
     def grid_search(self, X, y, para_grid, **params):
         """
