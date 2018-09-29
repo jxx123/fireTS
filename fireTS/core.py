@@ -122,7 +122,7 @@ class GeneralAutoRegressor(TimeSeriesRegressor, RegressorMixin):
                             ``GridSearchCV`` in scikit-learn package.
         """
         grid = GridSearchCV(self.base_estimator, para_grid, **params)
-        X, y = check_X_y(X, y, y_numeric=True)
+        X, y = np.array(X), np.array(y)
         features, target = self._preprocess_data(X, y)
         grid.fit(features, target)
         self.set_params(**grid.best_params_)

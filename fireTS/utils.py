@@ -22,11 +22,11 @@ def shift(darray, k, axis=0):
     if k == 0:
         return darray
     elif k < 0:
-        shift_array = np.roll(darray, k, axis=axis)
+        shift_array = np.roll(darray, k, axis=axis).astype(float)
         shift_array[k:] = np.nan
         return shift_array
     else:
-        shift_array = np.roll(darray, k, axis=axis)
+        shift_array = np.roll(darray, k, axis=axis).astype(float)
         shift_array[:k] = np.nan
         return shift_array
 

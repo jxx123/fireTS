@@ -193,7 +193,7 @@ class DirectAutoRegressor(GeneralAutoRegressor):
                                 yhat])[0:len(y)]
         return ypred
 
-    def score(self, X, y, method="r2"):
+    def score(self, X, y, method="r2", verbose=False):
         """
         Produce multi-step prediction of y, and compute the metrics against y.
         Nan is ignored when computing the metrics.
@@ -208,6 +208,9 @@ class DirectAutoRegressor(GeneralAutoRegressor):
         """
         ypred = self.predict(X, y)
         mask = np.isnan(y) | np.isnan(ypred)
+        if verbose:
+            print('Evaluating {} score, {} of {} data points are evaluated.'.
+                  format(method, np.sum(~mask), y.shape[0]))
         if method == "r2":
             return r2_score(y[~mask], ypred[~mask])
         elif method == "mse":
