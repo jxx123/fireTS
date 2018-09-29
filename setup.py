@@ -8,7 +8,7 @@ dependencies = [
 
 setup(
     name='fireTS',
-    version='0.0.6',
+    version='0.0.7',
     description='A python package for multi-variate time series prediction',
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
