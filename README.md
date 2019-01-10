@@ -1,6 +1,8 @@
 # fireTS #
 [![Documentation Status](https://readthedocs.org/projects/firets/badge/?version=latest)](https://firets.readthedocs.io/en/latest/?badge=latest)
 
+[Documentation](https://firets.readthedocs.io/en/latest/)
+
 `fireTS` is a sklean style package for multi-variate time-series prediction. Here is a simple code snippet to showcase the awesome features provided by `fireTS` package.
 ```python
 from fireTS.models import NARX, DirectAutoRegressor
