@@ -1,5 +1,8 @@
 # fireTS #
 [![Documentation Status](https://readthedocs.org/projects/firets/badge/?version=latest)](https://firets.readthedocs.io/en/latest/?badge=latest)
+[![Downloads](https://pepy.tech/badge/firets)](https://pepy.tech/project/firets)
+[![Downloads](https://pepy.tech/badge/firets/month)](https://pepy.tech/project/firets)
+[![Downloads](https://pepy.tech/badge/firets/week)](https://pepy.tech/project/firets)
 
 [Documentation](https://firets.readthedocs.io/en/latest/)
 
