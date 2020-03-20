@@ -109,7 +109,13 @@ class NARX(GeneralAutoRegressor):
 
         ypred = np.concatenate([np.empty(step) * np.nan, yhat])[0:len(y)]
         return ypred
-
+    
+    
+    def forecast(self, X):
+        """
+        Given X values, predict future values
+        """
+        pass
 
 class DirectAutoRegressor(GeneralAutoRegressor):
     r"""
@@ -192,6 +198,13 @@ class DirectAutoRegressor(GeneralAutoRegressor):
         ypred = np.concatenate([np.empty(self.pred_step) * np.nan,
                                 yhat])[0:len(y)]
         return ypred
+
+    def forecast(self, X):
+        """
+        Given X values, predict future values
+        """
+        pass
+
 
     def score(self, X, y, method="r2", verbose=False):
         """

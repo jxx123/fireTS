@@ -4,6 +4,7 @@ dependencies = [
     'numpy',
     'scipy',
     'scikit-learn',
+    'matplotlib'
 ]
 
 setup(
