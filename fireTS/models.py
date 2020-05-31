@@ -1,7 +1,8 @@
 from fireTS.core import GeneralAutoRegressor
-from sklearn.utils.validation import check_X_y
+from sklearn.utils.validation import check_X_y, check_array
 from sklearn.metrics.regression import r2_score, mean_squared_error
 import numpy as np
+from collections import deque
 
 
 class NARX(GeneralAutoRegressor):
@@ -69,7 +70,6 @@ class NARX(GeneralAutoRegressor):
         elif method == "mse":
             return mean_squared_error(y[~mask], ypred[~mask])
 
-    # TODO: add forecast method
     def predict(self, X, y, step=1):
         r"""
         Produce multi-step prediction of y. The multi-step prediction is done
@@ -92,12 +92,7 @@ class NARX(GeneralAutoRegressor):
                  max(auto_order - 1, max(exog_order + exog_delay) - 1)`` values of the
                  output is ``np.nan``.
         """
-        # TODO: this allows nan in X and y, but might need more error checking
-        X, y = np.array(X), np.array(y)
-        if len(self.exog_order) != X.shape[1]:
-            raise ValueError(
-                'The number of columns of X must be the same as the length of exog_order.'
-            )
+        X, y = self._check_and_preprocess_X_y(X, y)
         p = self._get_lag_feature_processor(X, y)
         features = p.generate_lag_features()
 
@@ -109,6 +104,54 @@ class NARX(GeneralAutoRegressor):
 
         ypred = np.concatenate([np.empty(step) * np.nan, yhat])[0:len(y)]
         return ypred
+
+    def forecast(self, X, y, step=1, X_future=None):
+        r"""
+        Forecast y multiple step ahead given the exogenous input history X, 
+        output history y and the future exogenous input X_future. X_future is
+        assumed to be all zeros if not specified.
+
+        :param array-like X: exogenous input time series, shape = (n_samples,
+                             n_exog_inputs)
+        :param array-like y: target time series to predict, shape = (n_samples)
+        :param int step: prediction step.
+        :param array-like X_futrue: future exogenous input time series, shape =
+                                    (step - 1, n_exog_inputs)
+
+        :return: multi-step forecasted time series, shape = (step).
+        """
+        assert step > 0
+
+        X, y = self._check_and_preprocess_X_y(X, y)
+
+        if X_future is None:
+            X_future = np.zeros((step - 1, self.num_exog_inputs))
+        X_future = check_array(X_future, ensure_min_samples=0)
+        if X_future.shape[0] != step - 1:
+            raise ValueError('The row number of X_future ({}) must to step - 1 ({})!'.format(X_future.shape[0], step - 1))
+
+        auto_regressor = deque(y[:(-1 - self.auto_order):-1])
+        exog_regressors = [
+                deque(X[(-1 - d):(-1 - q):-1, i])
+                for i, (d, q) in enumerate(zip(self.exog_delay, self.exog_order))
+                ]
+        cur_step = 0
+        y_forecast = []
+        while cur_step < step:
+            X_base = np.concatenate([np.array(auto_regressor), 
+                np.concatenate(exog_regressors)]).reshape(1, -1)
+            y_hat = self.base_estimator.predict(X_base)
+            y_forecast.append(y_hat[0])
+            if cur_step == step - 1:
+                break
+            # update regressors with the newly obtained values
+            auto_regressor.pop()
+            auto_regressor.appendleft(y_forecast[-1])
+            for exog_reg, X_next in zip(exog_regressors, X_future[cur_step, :]):
+                exog_reg.pop()
+                exog_reg.appendleft(X_next)
+            cur_step += 1
+        return np.array(y_forecast)
 
 
 class DirectAutoRegressor(GeneralAutoRegressor):
@@ -179,12 +222,7 @@ class DirectAutoRegressor(GeneralAutoRegressor):
                  ``pred_step + max(auto_order - 1, max(exog_order +
                  exog_delay) - 1)`` values of the output is ``np.nan``.
         """
-        # TODO: this allows nan in X and y, but might need more error checking
-        X, y = np.array(X), np.array(y)
-        if len(self.exog_order) != X.shape[1]:
-            raise ValueError(
-                'The number of columns of X must be the same as the length of exog_order.'
-            )
+        X, y = self._check_and_preprocess_X_y(X, y)
         p = self._get_lag_feature_processor(X, y)
         features = p.generate_lag_features()
         yhat = self._predictNA(features)
@@ -215,3 +253,5 @@ class DirectAutoRegressor(GeneralAutoRegressor):
             return r2_score(y[~mask], ypred[~mask])
         elif method == "mse":
             return mean_squared_error(y[~mask], ypred[~mask])
+        else:
+            raise ValueError('{} method is not supported. Please choose from \"r2\" or \"mse\".')

@@ -72,6 +72,7 @@ class GeneralAutoRegressor(TimeSeriesRegressor, RegressorMixin):
                 'The length of exog_delay must be the same as the length of exog_order.'
             )
         self.exog_delay = exog_delay
+        self.num_exog_inputs = len(exog_order)
         self.pred_step = pred_step
 
     def fit(self, X, y, **params):
@@ -82,25 +83,22 @@ class GeneralAutoRegressor(TimeSeriesRegressor, RegressorMixin):
                              n_exog_inputs)
         :param array-like y: target time series to predict, shape = (n_samples)
         """
-        # TODO: this allows nan in X and y, but might need more error checking
-        X, y = np.array(X), np.array(y)
-        if len(self.exog_order) != X.shape[1]:
-            raise ValueError(
-                'The number of columns of X must be the same as the length of exog_order.'
-            )
+        X, y = self._check_and_preprocess_X_y(X, y)
         features, target = self._preprocess_data(X, y)
         self.base_estimator.fit(features, target, **params)
 
     def _preprocess_data(self, X, y):
+        """
+        Helper function to prepare the data for base_estimator.
+        """
         p = self._get_lag_feature_processor(X, y)
         features = p.generate_lag_features()
         target = shift(y, -self.pred_step)
 
-        # Remove NaN
+        # Remove NaN introduced by shift
         all_data = np.concatenate([target.reshape(-1, 1), features], axis=1)
         mask = np.isnan(all_data).any(axis=1)
         features, target = features[~mask], target[~mask]
-
         return features, target
 
     def _get_lag_feature_processor(self, X, y):
@@ -122,14 +120,25 @@ class GeneralAutoRegressor(TimeSeriesRegressor, RegressorMixin):
                             ``GridSearchCV`` in scikit-learn package.
         """
         grid = GridSearchCV(self.base_estimator, para_grid, **params)
-        X, y = np.array(X), np.array(y)
+        X, y = self._check_and_preprocess_X_y(X, y)
         features, target = self._preprocess_data(X, y)
         grid.fit(features, target)
         self.set_params(**grid.best_params_)
 
     def _predictNA(self, Xdata):
+        # Xdata contains nan introduced by shift
         ypred = np.empty(Xdata.shape[0]) * np.nan
         mask = np.isnan(Xdata).any(axis=1)
         X2pred = Xdata[~mask]
         ypred[~mask] = self.base_estimator.predict(X2pred)
         return ypred
+
+    def _check_and_preprocess_X_y(self, X, y):
+        min_samples_required = max(self.auto_order, 
+                np.max(np.array(self.exog_delay) + np.array(self.exog_order))) - 1
+        X, y = check_X_y(X, y, ensure_min_samples=min_samples_required)
+        if len(self.exog_order) != X.shape[1]:
+            raise ValueError(
+                'The number of columns of X must be the same as the length of exog_order.'
+            )
+        return X, y
