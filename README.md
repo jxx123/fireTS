@@ -6,6 +6,21 @@
 
 [Documentation](https://firets.readthedocs.io/en/latest/)
 
+# UPDATES
+- 5/31/2020 `forecast` method is AVAILABLE now in `NARX` models!!! (`DirectAutoRegressor` is not suitable to do forecast, so there is no forecast method for it.) Here is a quick start example. Check "examples/Basic usage of NARX and DirectAutoregressor.ipynb" for more details.
+```python
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from fireTS.models import NARX
+
+x = np.random.randn(100, 1)
+y = np.random.randn(100)
+mdl = NARX(LinearRegression(), auto_order=2, exog_order=[2])
+mdl.fit(x, y)
+y_forecast = mdl.forecast(x, y, step=10, X_future=np.random.randn((9, 1)))
+```
+
+# Introduction
 `fireTS` is a sklean style package for multi-variate time-series prediction. Here is a simple code snippet to showcase the awesome features provided by `fireTS` package.
 ```python
 from fireTS.models import NARX, DirectAutoRegressor
