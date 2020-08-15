@@ -163,3 +163,11 @@ mdl.fit(x, y)
 ypred = mdl.predict(x, y, step=3)
 ```
 The examples folder provides more realistic examples. The [example1](https://github.com/jxx123/fireTS/blob/master/examples/Basic%20usage%20of%20NARX%20and%20DirectAutoregressor.ipynb) and [example2](https://github.com/jxx123/fireTS/blob/master/examples/Use%20Grid%20Search%20to%20tune%20the%20hyper-parameter%20of%20base%20model.ipynb) use the data simulated by [simglucose pakage](https://github.com/jxx123/simglucose) to fit time series model and make multi-step prediction.
+
+## FAQ ##
+- What is the difference between `predict` and `forecast`?
+	- For example, given a target time series `y(0), y(1), ..., y(9)` to predict and the exogenous input time series `x(0), x(1), ..., x(9)`, build a NARX model `NARX(RandomForestRegressor(), auto_order=1, exog_order=[1], exog_delay=[0])`. The model can be represented by a function `y(t + 1) = f(y(t), x(t)) + e(t)`. 
+	- `predict(x, y, step=2)` outputs a time series that has the same length as original `y`, and it means the 2-step-ahead prediction at each step, i.e. `nan, nan, y_hat(2), y_hat(3), ..., y_hat(9)`. Note that `y_hat(2)` is the 2-step-ahead prediction standing at time 0. `y_hat(3)` is the 2-step-ahead prediction standing at time 1, and so on. Another **very important** note is that predicted value `y_hat(2) = f(y_hat(1), x(1)) = f(f(y(0), x(0)), x(1))`. The prediction uses a **perfect future information `x(1)`** (since you are currently at time 0).
+	- When `forecast(x, y, step=2)` was called, the output is of length 2, meaning the predicted y in the future 2 steps, i.e. `y_hat(10), y_hat(11)`. Here, both `y_hat(10), y_hat(11)` are the predicted values standing at time 9. However, `forecast` will **NOT** use any perfect future information of the exogenous input `x` by default. In fact, the default future exogenous inputs `x` are assume to be zeros across the whole prediction horizon. You can provide your own future exogenous input values through the optional argument `X_future` (call `forcast(x, y, step=2, X_future=your_X_future)`).
+
+
