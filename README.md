@@ -4,10 +4,10 @@
 [![Downloads](https://pepy.tech/badge/firets/month)](https://pepy.tech/project/firets)
 [![Downloads](https://pepy.tech/badge/firets/week)](https://pepy.tech/project/firets)
 
-[Documentation](https://firets.readthedocs.io/en/latest/)
+[**Documentation**](https://firets.readthedocs.io/en/latest/), [**FAQ**](https://github.com/jxx123/fireTS#faq)
 
 # UPDATES
-- 5/31/2020 `forecast` method is AVAILABLE now in `NARX` models!!! (`DirectAutoRegressor` is not suitable to do forecast, so there is no forecast method for it.) Here is a quick start example. Check "examples/Basic usage of NARX and DirectAutoregressor.ipynb" for more details.
+- 5/31/2020 `forecast` method is AVAILABLE now in `NARX` models!!! (`DirectAutoRegressor` is not suitable to do forecast, so there is no forecast method for it.) Here is a quick start example. Check "examples/Basic usage of NARX and DirectAutoregressor.ipynb" for more details. [What is the difference between `predict` and `forecast`?](https://github.com/jxx123/fireTS#faq)
 ```python
 import numpy as np
 from sklearn.linear_model import LinearRegression
