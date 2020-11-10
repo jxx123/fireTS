@@ -29,5 +29,29 @@ def test_forecast_and_predict_consistency():
     np.testing.assert_almost_equal(ypred[-1], yforecast[-1])
 
 
+def test_forecast_exog_delay():
+    np.random.seed(0)
+    x = np.random.randn(10, 1)
+    y = np.random.randn(10)
+
+    # delay 0
+    mdl = NARX(LinearRegression(), auto_order=2, exog_order=[2], exog_delay=[0])
+    mdl.fit(x, y)
+    yforecast = mdl.forecast(x[:-1, :], y[:-1], step=1)
+    np.testing.assert_almost_equal(yforecast, [-0.50000582])
+
+    # delay 1
+    mdl = NARX(LinearRegression(), auto_order=2, exog_order=[2], exog_delay=[1])
+    mdl.fit(x, y)
+    yforecast = mdl.forecast(x[:-1, :], y[:-1], step=1)
+    np.testing.assert_almost_equal(yforecast, [-0.53345719])
+
+    # delay 2
+    mdl = NARX(LinearRegression(), auto_order=2, exog_order=[2], exog_delay=[2])
+    mdl.fit(x, y)
+    yforecast = mdl.forecast(x[:-1, :], y[:-1], step=1)
+    np.testing.assert_almost_equal(yforecast, [-0.61640028])
+
 if __name__ == '__main__':
     test_forecast_and_predict_consistency()
+    test_forecast_exog_delay()
