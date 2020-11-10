@@ -1,6 +1,6 @@
 from fireTS.core import GeneralAutoRegressor
 from sklearn.utils.validation import check_X_y, check_array
-from sklearn.metrics.regression import r2_score, mean_squared_error
+from sklearn.metrics import r2_score, mean_squared_error
 import numpy as np
 from collections import deque
 
@@ -132,7 +132,7 @@ class NARX(GeneralAutoRegressor):
 
         auto_regressor = deque(y[:(-1 - self.auto_order):-1])
         exog_regressors = [
-                deque(X[(-1 - d):(-1 - q):-1, i])
+                deque(X[(-1 - d):(-1 - d - q):-1, i])
                 for i, (d, q) in enumerate(zip(self.exog_delay, self.exog_order))
                 ]
         cur_step = 0
